@@ -2,10 +2,12 @@ package jp.syam8192.viewerimageview;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -213,6 +215,38 @@ public class ViewerImageView extends ImageView
         toValues[5] = transY;
         toValues[8] = 1.0f;
         this.startMatrixAnimation(duration);
+    }
+
+    /**
+     * いま見えている範囲を切り取ったBitmapオブジェクトを返す.
+     * 表示範囲が制限内に収まっていない場合は null を返す.
+     *
+     * @param maxPxWidth 画像の幅の最大(px).切り取り結果がこれを超える場合は超えないようにスケーリングする.
+     *                   0以下 を指定すると制限しない.
+     */
+    public Bitmap getClippedBitmap(int maxPxWidth) {
+        if ( ! this.isInConstraints() ) {
+            return null;
+        }
+        float[] m = this.getImageMatrixValues();
+        float trimmedWidth = (float)getWidth() / m[0];
+        float trimmedHeight = (float)getHeight() / m[4];
+        Matrix matrix = new Matrix();
+        matrix.reset();
+        if ( maxPxWidth > 0 && trimmedWidth > maxPxWidth ) {
+            float s = maxPxWidth / trimmedWidth;
+            matrix.setScale(s,s,0,0);
+            trimmedWidth = maxPxWidth;
+            trimmedHeight = trimmedWidth * getHeight() / getWidth();
+        }
+        Bitmap source = ((BitmapDrawable)this.getDrawable()).getBitmap();
+        Bitmap resultBmp = Bitmap.createBitmap(source,
+                (int)((scrollInsets.left - m[2] ) / m[0] ),
+                (int)((scrollInsets.top - m[5] ) / m[4] ),
+                (int)trimmedWidth,
+                (int)trimmedHeight,
+                matrix, true );
+        return resultBmp;
     }
 
     /**
