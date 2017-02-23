@@ -4,7 +4,9 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.ViewTreeObserver;
 
 import java.io.InputStream;
 
@@ -32,9 +34,23 @@ public class MainActivity extends Activity {
                 Bitmap img = BitmapFactory.decodeStream(in);
                 in.close();
 
-                ViewerImageView viewer = (ViewerImageView) findViewById(R.id.viewerView);
+                final ViewerImageView viewer = (ViewerImageView) findViewById(R.id.viewerView);
                 viewer.setImageBitmap(img);
-                viewer.setCenter(viewer.getZoomScaleCrop(), 0);
+
+                viewer.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        viewer.minimumZoomScale = viewer.getZoomScaleCrop();
+                        viewer.maximumZoomScale = viewer.getZoomScaleCrop() * 2;
+                        viewer.setCenter(viewer.getZoomScaleCrop(), 0);
+                        if (Build.VERSION.SDK_INT >= 16) {
+                            viewer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        } else {
+                            viewer.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                        }
+                    }
+                });
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
