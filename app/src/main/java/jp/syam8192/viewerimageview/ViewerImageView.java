@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -31,7 +32,7 @@ public class ViewerImageView extends ImageView
 
     public boolean scrollEnabled = true;        // スクロール・ズーム 有効/無効.
     public boolean constraintEnabled = true;    // スクロール・ズーム範囲制限 有効/無効.
-    public Rect scrollInsets = null;            // スクロール余白（right,bottomも余白の幅）.
+    public Rect scrollInsets = null;            // スクロール余白（right,bottomも余白の幅）.(px)
     public float minimumZoomScale = 1.0f;       // ズーム値の最小.
     public float maximumZoomScale = 5.0f;       // ズーム値の最大.
     private float fitScale = -1.0f;         // 内側にフィットするズーム値.
@@ -89,6 +90,16 @@ public class ViewerImageView extends ImageView
             this.gesturedetector = new GestureDetector(context, this);
         }
         this.scrollInsets = new Rect(0, 0, 0, 0);
+    }
+
+    public void setScrollInsets(float left, float top, float right, float bottom) {
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+
+        this.scrollInsets = new Rect(
+                (int) (left * metrics.density),
+                (int) (top * metrics.density),
+                (int) (right * metrics.density),
+                (int) (bottom * metrics.density));
     }
 
     /**
@@ -218,8 +229,9 @@ public class ViewerImageView extends ImageView
     }
 
     /**
-     * いま見えている範囲を切り取ったBitmapオブジェクトを返す.
+     * いま見えている範囲（scrollInsetsが設定されている場合はその内側）を切り取ったBitmapオブジェクトを返す.
      * 表示範囲が制限内に収まっていない場合は null を返す.
+     *
      *
      * @param maxPxWidth 画像の幅の最大(px).切り取り結果がこれを超える場合は超えないようにスケーリングする.
      *                   0以下 を指定すると制限しない.
@@ -229,8 +241,8 @@ public class ViewerImageView extends ImageView
             return null;
         }
         float[] m = this.getImageMatrixValues();
-        float trimmedWidth = (float)getWidth() / m[0];
-        float trimmedHeight = (float)getHeight() / m[4];
+        float trimmedWidth = (float)(getWidth() - scrollInsets.right - scrollInsets.left) / m[0];
+        float trimmedHeight = (float)(getHeight() - scrollInsets.top - scrollInsets.bottom) / m[4];
         Matrix matrix = new Matrix();
         matrix.reset();
         if ( maxPxWidth > 0 && trimmedWidth > maxPxWidth ) {
