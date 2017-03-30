@@ -63,8 +63,8 @@ public class MainActivity extends Activity {
                 viewer.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override
                     public void onGlobalLayout() {
-                        viewer.minimumZoomScale = viewer.getZoomScaleCrop();
-                        viewer.maximumZoomScale = viewer.getZoomScaleCrop() * 4;
+                        viewer.minimumZoomScale = viewer.getZoomScaleCropInInsets();
+                        viewer.maximumZoomScale = viewer.getZoomScaleCropInInsets() * 5;
                         viewer.setCenter(viewer.getZoomScaleCrop(), 0);
                         if (Build.VERSION.SDK_INT >= 16) {
                             viewer.getViewTreeObserver().removeOnGlobalLayoutListener(this);

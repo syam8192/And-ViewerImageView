@@ -37,6 +37,8 @@ public class ViewerImageView extends ImageView
     public float maximumZoomScale = 5.0f;       // ズーム値の最大.
     private float fitScale = -1.0f;         // 内側にフィットするズーム値.
     private float cropScale = -1.0f;        // 外側にフィットするズーム値.
+    private float fitScaleInInsets = -1.0f;         // 内側にフィットするズーム値.
+    private float cropScaleInInsets = -1.0f;        // 外側にフィットするズーム値.
 
     private final Matrix matrix = new Matrix();       // imageMatrixの更新用オブジェクト.
     private final Matrix touchedMatrix = new Matrix();// タッチ開始したときの画像変形行列(imageMatrix).
@@ -140,6 +142,20 @@ public class ViewerImageView extends ImageView
      *
      * @return スケール値.
      */
+    public float getZoomScaleFitInInsets() {
+        if (this.fitScaleInInsets < 0.0f) {
+            this.fitScaleInInsets = this.getZoomScaleFit(
+                    getWidth() - scrollInsets.left - scrollInsets.right,
+                    getHeight() - scrollInsets.top - scrollInsets.bottom);
+        }
+        return this.fitScaleInInsets;
+    }
+
+    /**
+     * 内側にフィットするスケール値を返す.
+     *
+     * @return スケール値.
+     */
     public float getZoomScaleFit(int width, int height) {
         int iw = this.getDrawable().getIntrinsicWidth();
         int ih = this.getDrawable().getIntrinsicHeight();
@@ -162,9 +178,26 @@ public class ViewerImageView extends ImageView
         return this.cropScale;
     }
 
+
+    /**
+     * scrollInsets を考慮して外側にフィットするスケール値を返す.
+     *
+     * @return スケール値.
+     */
+    public float getZoomScaleCropInInsets() {
+        if (this.cropScaleInInsets < 0.0f) {
+            this.cropScaleInInsets = this.getZoomScaleCrop(
+                    getWidth() - scrollInsets.left - scrollInsets.right,
+                    getHeight() - scrollInsets.top - scrollInsets.bottom);
+        }
+        return this.cropScaleInInsets;
+    }
+
     /**
      * 外側にフィットするスケール値を返す.
      *
+     * @param width フィットさせる幅.
+     * @param height フィットさせる高さ.
      * @return スケール値.
      */
     public float getZoomScaleCrop(int width, int height) {
@@ -554,23 +587,24 @@ public class ViewerImageView extends ImageView
         final float[] m = this.getImageMatrixValues();
         float scale;
         double duration;
-        if (m[0] < getZoomScaleFit()) {
-            this.interpolator = new AccelerateDecelerateInterpolator();
-            duration = 300;
-            scale = this.fitScale;
-        } else if (m[0] > getZoomScaleCrop()) {
-            this.ignoreTouch = true;
-            this.interpolator = new OvershootInterpolator();
-            this.setCenter( getZoomScaleFit() , 400);
-            return true;
-        } else if (m[0] == getZoomScaleCrop()) {
+//        if (m[0] < getZoomScaleFitInInsets()) {
+//            this.interpolator = new AccelerateDecelerateInterpolator();
+//            duration = 300;
+//            scale = this.fitScaleInInsets;
+//        } else if (m[0] > getZoomScaleCropInInsets()) {
+//            this.ignoreTouch = true;
+//            this.interpolator = new OvershootInterpolator();
+//            this.setCenter( getZoomScaleFitInInsets() , 400);
+//            return true;
+//        } else
+        if (m[0] == getZoomScaleCropInInsets()) {
             this.interpolator = new AccelerateDecelerateInterpolator();
             duration = 400;
             scale = this.maximumZoomScale;
         } else {
             this.interpolator = new AccelerateDecelerateInterpolator();
             duration = 300;
-            scale = getZoomScaleCrop();
+            scale = getZoomScaleCropInInsets();
         }
 
         float px = (e.getX() - m[2]) / m[0];
