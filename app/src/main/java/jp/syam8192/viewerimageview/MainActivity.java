@@ -9,6 +9,7 @@ import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
@@ -55,13 +56,15 @@ public class MainActivity extends Activity {
                 final RelativeLayout.LayoutParams frameLayout = (RelativeLayout.LayoutParams)viewer.getLayoutParams();
 
                 viewer.setImageBitmap(img);
+
+                // フレームの外側のマージンを scrollInset として設定しています.
                 viewer.setScrollInsets(44-5, 60-5, 44-5, 44-5);
 
                 viewer.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override
                     public void onGlobalLayout() {
                         viewer.minimumZoomScale = viewer.getZoomScaleCrop();
-                        viewer.maximumZoomScale = viewer.getZoomScaleCrop() * 2;
+                        viewer.maximumZoomScale = viewer.getZoomScaleCrop() * 4;
                         viewer.setCenter(viewer.getZoomScaleCrop(), 0);
                         if (Build.VERSION.SDK_INT >= 16) {
                             viewer.getViewTreeObserver().removeOnGlobalLayoutListener(this);
@@ -78,16 +81,16 @@ public class MainActivity extends Activity {
     }
 
     private void trim() {
+
         final ViewerImageView viewer = (ViewerImageView) findViewById(R.id.viewerView);
 
-        final View frameView = findViewById(R.id.imageView);
+        Bitmap bmp =  viewer.getClippedBitmap(0); // 最大幅指定なし.
 
-        Bitmap bmp =  viewer.getClippedBitmap(0);
-
+        if (bmp == null) {
+            return;
+        }
         ImageView imageView = new ImageView(this);
         imageView.setImageBitmap(bmp);
-        imageView.setScaleType(ImageView.ScaleType.FIT_XY);
-        imageView.setAdjustViewBounds(true);
         Dialog dialog = new Dialog(this);
         dialog.getWindow().requestFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(imageView);
