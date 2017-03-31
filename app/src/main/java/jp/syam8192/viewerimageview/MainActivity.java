@@ -58,7 +58,7 @@ public class MainActivity extends Activity {
                 viewer.setImageBitmap(img);
 
                 // フレームの外側のマージンを scrollInset として設定しています.
-                viewer.setScrollInsets(44-5, 60-5, 44-5, 44-5);
+                viewer.setScrollInsetsDP(44 - 5, 60 - 5, 44 - 5, 44 - 5);
 
                 viewer.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override

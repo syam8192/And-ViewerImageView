@@ -8,6 +8,7 @@ import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -30,9 +31,20 @@ import android.widget.ImageView;
 public class ViewerImageView extends ImageView
         implements GestureDetector.OnGestureListener, GestureDetector.OnDoubleTapListener {
 
+    // 余白.
+    public final class Insets {
+        public int left;
+        public int top;
+        public int right;
+        public int bottom;
+        public Insets(int left, int top, int right, int bottom) {
+            this.left = left; this.top = top; this.right = right; this.bottom = bottom;
+        }
+    }
+
     public boolean scrollEnabled = true;        // スクロール・ズーム 有効/無効.
     public boolean constraintEnabled = true;    // スクロール・ズーム範囲制限 有効/無効.
-    public Rect scrollInsets = null;            // スクロール余白（right,bottomも余白の幅）.(px)
+    public Insets scrollInsets = null;            // スクロール余白(px).
     public float minimumZoomScale = 1.0f;       // ズーム値の最小.
     public float maximumZoomScale = 5.0f;       // ズーム値の最大.
     private float fitScale = -1.0f;         // 内側にフィットするズーム値.
@@ -91,13 +103,19 @@ public class ViewerImageView extends ImageView
         if (this.gesturedetector == null) {
             this.gesturedetector = new GestureDetector(context, this);
         }
-        this.scrollInsets = new Rect(0, 0, 0, 0);
+        this.scrollInsets = new Insets(0, 0, 0, 0);
     }
 
-    public void setScrollInsets(float left, float top, float right, float bottom) {
+    /**
+     * スクロールに含める画像の外側の余白の大きさを dp で指定します. （保持は px 単位でしています）
+     * @param left
+     * @param top
+     * @param right
+     * @param bottom
+     */
+    public void setScrollInsetsDP(float left, float top, float right, float bottom) {
         DisplayMetrics metrics = getResources().getDisplayMetrics();
-
-        this.scrollInsets = new Rect(
+        this.scrollInsets = new Insets(
                 (int) (left * metrics.density),
                 (int) (top * metrics.density),
                 (int) (right * metrics.density),
@@ -265,12 +283,12 @@ public class ViewerImageView extends ImageView
      * いま見えている範囲（scrollInsetsが設定されている場合はその内側）を切り取ったBitmapオブジェクトを返す.
      * 表示範囲が制限内に収まっていない場合は null を返す.
      *
-     *
      * @param maxPxWidth 画像の幅の最大(px).切り取り結果がこれを超える場合は超えないようにスケーリングする.
      *                   0以下 を指定すると制限しない.
      */
     public Bitmap getClippedBitmap(int maxPxWidth) {
-        if ( ! this.isInConstraints() ) {
+        Drawable drawable = getDrawable();
+        if (drawable == null || !(drawable instanceof BitmapDrawable) || ! this.isInConstraints()) {
             return null;
         }
         float[] m = this.getImageMatrixValues();
@@ -284,7 +302,7 @@ public class ViewerImageView extends ImageView
             trimmedWidth = maxPxWidth;
             trimmedHeight = trimmedWidth * getHeight() / getWidth();
         }
-        Bitmap source = ((BitmapDrawable)this.getDrawable()).getBitmap();
+        Bitmap source = ((BitmapDrawable)drawable).getBitmap();
         Bitmap resultBmp = Bitmap.createBitmap(source,
                 (int)((scrollInsets.left - m[2] ) / m[0] ),
                 (int)((scrollInsets.top - m[5] ) / m[4] ),
@@ -379,7 +397,8 @@ public class ViewerImageView extends ImageView
      * @return 制限内に収まっていない（＝このあとアニメーション開始する必要がある）場合は true.
      */
     private boolean setConstraintMatrix() {
-        if (!this.constraintEnabled) {
+        Drawable drawable = getDrawable();
+        if (drawable == null || !(drawable instanceof BitmapDrawable) || ! this.constraintEnabled ) {
             return false;
         }
         this.getImageMatrix().getValues(toValues);
@@ -403,8 +422,8 @@ public class ViewerImageView extends ImageView
             toValues[4] = this.minimumZoomScale;
             scaleChanged = true;
         }
-        float w = toValues[0] * (float) this.getDrawable().getIntrinsicWidth();
-        float h = toValues[4] * (float) this.getDrawable().getIntrinsicHeight();
+        float w = toValues[0] * (float) drawable.getIntrinsicWidth();
+        float h = toValues[4] * (float) drawable.getIntrinsicHeight();
         float top = this.scrollInsets.top;
         float left = this.scrollInsets.left;
         float right = this.getWidth() - w - this.scrollInsets.right;
